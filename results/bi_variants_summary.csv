@@ -1,0 +1,13 @@
+thr,variant,AP,P@100,lift@100
+thr001,clip,0.0039,0.01,3.92
+thr001,no_clip,0.0059,0.01,3.92
+thr001,softplus,0.0054,0.02,7.84
+thr001,reward_shaping,0.0041,0.02,7.84
+thr005,clip,0.009,0.02,2.62
+thr005,no_clip,0.0081,0.02,2.62
+thr005,softplus,0.0088,0.05,6.55
+thr005,reward_shaping,0.0083,0.02,2.62
+thr010,clip,0.0152,0.03,2.14
+thr010,no_clip,0.0146,0.01,0.71
+thr010,softplus,0.015,0.01,0.71
+thr010,reward_shaping,0.0145,0.0,0.0
