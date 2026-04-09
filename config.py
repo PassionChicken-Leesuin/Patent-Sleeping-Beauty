@@ -42,6 +42,7 @@ FEATURES_DIR.mkdir(exist_ok=True)
 FEATURES_35_FILE  = FEATURES_DIR / "features_3_5yr.parquet"
 FEATURES_75_FILE  = FEATURES_DIR / "features_7_5yr.parquet"
 FEATURES_115_FILE = FEATURES_DIR / "features_11_5yr.parquet"
+MAINT_FEATURES_FILE = FEATURES_DIR / "maint_features.parquet"
 
 # ── 연구 파라미터 ─────────────────────────────────────
 GRANT_YEAR_START = 1980
@@ -90,6 +91,16 @@ STATIC_COLS = [
     "is_organization", "is_us_company", "is_foreign", "is_individual",
     "ipc_section_enc", "ipc_class_enc", "ipc_subclass_enc",
 ]
+
+# ── Maintenance Fee Feature 컬럼 (시점별로 사용 가능 여부 다름) ──
+# 3.5yr 모델  : 사용 불가 (미래 정보)
+# 7.5yr 모델  : paid_3_5
+# 11.5yr 모델 : paid_3_5, paid_7_5
+MAINT_COLS_BY_CUTOFF = {
+    3.5:  [],
+    7.5:  ["paid_3_5"],
+    11.5: ["paid_3_5", "paid_7_5"],
+}
 
 # ── Threshold별 경로 헬퍼 ────────────────────────────
 def thr_tag(thr: float) -> str:

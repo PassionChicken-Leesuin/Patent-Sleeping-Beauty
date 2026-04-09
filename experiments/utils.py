@@ -17,8 +17,9 @@ from sklearn.metrics import average_precision_score, mean_squared_error
 
 from config import (
     FEATURES_35_FILE, FEATURES_75_FILE, FEATURES_115_FILE,
+    MAINT_FEATURES_FILE,
     TRAIN_YEARS, VAL_YEARS, TEST_YEARS,
-    STATIC_COLS, XGB_PARAMS, PSB_WEIGHT,
+    STATIC_COLS, MAINT_COLS_BY_CUTOFF, XGB_PARAMS, PSB_WEIGHT,
 )
 
 
@@ -39,8 +40,13 @@ def get_cite_cols(cutoff: float) -> list:
     ]
 
 
+def get_maint_cols(cutoff: float) -> list:
+    """의사결정 시점 t 에서 관측 가능한 납부 이력 컬럼."""
+    return MAINT_COLS_BY_CUTOFF.get(cutoff, [])
+
+
 def get_feature_cols(cutoff: float) -> list:
-    return STATIC_COLS + get_cite_cols(cutoff)
+    return STATIC_COLS + get_cite_cols(cutoff) + get_maint_cols(cutoff)
 
 
 # ── IPC Frequency Encoding ───────────────────────────
@@ -61,19 +67,46 @@ def label_encode_ipc(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ── 데이터 로드 & 병합 ───────────────────────────────
-def load_and_merge(cutoff: float, labels: pd.DataFrame) -> pd.DataFrame:
-    """피처 파일 + 라벨 병합 후 IPC 인코딩 및 결측치 처리"""
+def load_and_merge(
+    cutoff: float,
+    labels: pd.DataFrame,
+    survival_filter: bool = False,
+) -> pd.DataFrame:
+    """피처 파일 + 라벨 + 납부 이력 병합 후 IPC 인코딩 및 결측치 처리.
+
+    survival_filter=True 이면 해당 cutoff 에 살아있었던 특허만 남긴다
+    (실제 owner 의 납부 이력 기반):
+        7.5yr  → paid_3_5 == 1
+        11.5yr → paid_3_5 == 1 AND paid_7_5 == 1
+    3.5yr 은 필터 없음.
+    """
     feat_map = {3.5: FEATURES_35_FILE, 7.5: FEATURES_75_FILE, 11.5: FEATURES_115_FILE}
     feat = pd.read_parquet(feat_map[cutoff])
+
     df = feat.merge(
         labels[["patent_id", "B", "t_m", "t_a", "psb", "ipc_subclass"]],
         on="patent_id", how="inner", suffixes=("", "_lbl"),
     )
+
+    # 납부 이력 병합 (maint_features.parquet 이 있을 때만)
+    if MAINT_FEATURES_FILE.exists():
+        mf = pd.read_parquet(MAINT_FEATURES_FILE)
+        df = df.merge(mf, on="patent_id", how="left")
+        for c in ["paid_3_5", "paid_7_5", "paid_11_5"]:
+            if c in df.columns:
+                df[c] = df[c].fillna(0).astype(int)
+
     df = label_encode_ipc(df)
     for c in get_feature_cols(cutoff):
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
             df[c] = df[c].replace([np.inf, -np.inf], 0)
+
+    if survival_filter:
+        if cutoff == 7.5 and "paid_3_5" in df.columns:
+            df = df[df["paid_3_5"] == 1].copy()
+        elif cutoff == 11.5 and "paid_3_5" in df.columns and "paid_7_5" in df.columns:
+            df = df[(df["paid_3_5"] == 1) & (df["paid_7_5"] == 1)].copy()
     return df
 
 
