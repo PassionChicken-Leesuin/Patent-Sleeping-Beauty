@@ -50,20 +50,41 @@ def get_feature_cols(cutoff: float) -> list:
 
 
 # ── IPC Frequency Encoding ───────────────────────────
-def label_encode_ipc(df: pd.DataFrame) -> pd.DataFrame:
-    """IPC 컬럼을 빈도 기반 정수 인코딩 (train 분포 기준)"""
-    df = df.copy()
-    for col, enc_col in [
-        ("ipc_section",    "ipc_section_enc"),
-        ("ipc_class_full", "ipc_class_enc"),
-        ("ipc_subclass",   "ipc_subclass_enc"),
-    ]:
+_IPC_COLS = [
+    ("ipc_section",    "ipc_section_enc"),
+    ("ipc_class_full", "ipc_class_enc"),
+    ("ipc_subclass",   "ipc_subclass_enc"),
+]
+
+
+def fit_ipc_freq(df: pd.DataFrame) -> dict:
+    """train fold 에서만 호출. 각 IPC 컬럼의 value_counts 를 반환."""
+    freqs = {}
+    for col, _ in _IPC_COLS:
         if col in df.columns:
-            freq = df[col].value_counts()
-            df[enc_col] = df[col].map(freq).fillna(0).astype(int)
+            freqs[col] = df[col].value_counts()
+        else:
+            freqs[col] = pd.Series(dtype=int)
+    return freqs
+
+
+def apply_ipc_freq(df: pd.DataFrame, freqs: dict) -> pd.DataFrame:
+    """fit_ipc_freq 로 얻은 train 분포를 val/test 에 동일하게 적용.
+    train 에 존재하지 않던 카테고리는 0 으로 처리된다 (unseen=0)."""
+    df = df.copy()
+    for col, enc_col in _IPC_COLS:
+        if col in df.columns and col in freqs:
+            df[enc_col] = df[col].map(freqs[col]).fillna(0).astype(int)
         else:
             df[enc_col] = 0
     return df
+
+
+def label_encode_ipc(df: pd.DataFrame) -> pd.DataFrame:
+    """[DEPRECATED] 전체 df 분포로 인코딩 — leakage.
+    fit_ipc_freq / apply_ipc_freq 를 쓰고 그 결과를 split 이후 각
+    fold 에 apply 해야 한다. 하위 호환 목적으로만 남겨둠."""
+    return apply_ipc_freq(df, fit_ipc_freq(df))
 
 
 # ── 데이터 로드 & 병합 ───────────────────────────────
@@ -72,7 +93,11 @@ def load_and_merge(
     labels: pd.DataFrame,
     survival_filter: bool = False,
 ) -> pd.DataFrame:
-    """피처 파일 + 라벨 + 납부 이력 병합 후 IPC 인코딩 및 결측치 처리.
+    """피처 파일 + 라벨 + 납부 이력 병합 후 결측치 처리.
+
+    ⚠ IPC frequency encoding 은 여기서 수행하지 않는다.
+       split() 으로 train 을 분리한 뒤 encode_ipc_splits() 로
+       train-fit / val·test-transform 해야 leakage 가 없다.
 
     survival_filter=True 이면 해당 cutoff 에 살아있었던 특허만 남긴다
     (실제 owner 의 납부 이력 기반):
@@ -96,7 +121,10 @@ def load_and_merge(
             if c in df.columns:
                 df[c] = df[c].fillna(0).astype(int)
 
-    df = label_encode_ipc(df)
+    # IPC encoded 컬럼을 미리 0 으로 채워둠 (split 이전 단계)
+    for _, enc_col in _IPC_COLS:
+        df[enc_col] = 0
+
     for c in get_feature_cols(cutoff):
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
@@ -108,6 +136,24 @@ def load_and_merge(
         elif cutoff == 11.5 and "paid_3_5" in df.columns and "paid_7_5" in df.columns:
             df = df[(df["paid_3_5"] == 1) & (df["paid_7_5"] == 1)].copy()
     return df
+
+
+def encode_ipc_splits(train: pd.DataFrame,
+                      val:   pd.DataFrame,
+                      test:  pd.DataFrame):
+    """train 분포로 IPC freq encoding 을 fit 하고 val/test 에 apply.
+
+    기존 load_and_merge 가 전체 df 분포로 인코딩하던 leakage 를
+    차단한다. 호출자는 split 직후 이 함수를 호출하면 된다.
+
+    Returns: (train, val, test) — 모두 인코딩 적용 후의 사본.
+    """
+    freqs = fit_ipc_freq(train)
+    return (
+        apply_ipc_freq(train, freqs),
+        apply_ipc_freq(val,   freqs),
+        apply_ipc_freq(test,  freqs),
+    )
 
 
 # ── Train/Val/Test Split ─────────────────────────────

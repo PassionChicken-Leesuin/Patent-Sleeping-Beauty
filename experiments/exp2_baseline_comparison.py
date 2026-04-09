@@ -31,7 +31,7 @@ import pandas as pd
 
 from config import PSB_THRESHOLDS, labels_file, models_dir, results_dir
 from utils import (
-    load_and_merge, split, get_feature_cols,
+    load_and_merge, split, encode_ipc_splits, get_feature_cols,
     train_xgb_classifier, train_rf_classifier,
     evaluate_ranking, save_model,
 )
@@ -84,6 +84,7 @@ def run_baseline_comparison(thr: float):
     # 3.5yr 피처 로드 (baseline 모델 학습 기준)
     df35 = load_and_merge(3.5, labels)
     tr35, val35, te35 = split(df35)
+    tr35, val35, te35 = encode_ipc_splits(tr35, val35, te35)
     print(f"  Train={len(tr35):,}(PSB={tr35['psb'].sum()})  "
           f"Val={len(val35):,}(PSB={val35['psb'].sum()})  "
           f"Test={len(te35):,}(PSB={te35['psb'].sum()})")

@@ -27,7 +27,7 @@ from config import (
     labels_file, models_dir, results_dir,
 )
 from utils import (
-    load_and_merge, split, print_split_stats,
+    load_and_merge, split, encode_ipc_splits, print_split_stats,
     get_feature_cols, train_qmodel, evaluate_ranking, save_model,
 )
 
@@ -50,6 +50,11 @@ def run_backward_induction(thr: float):
     tr35,  val35,  te35  = split(df35)
     tr75,  val75,  te75  = split(df75)
     tr115, val115, te115 = split(df115)
+
+    # IPC freq encoding: train fold 에서만 fit, val/test 에 transform
+    tr35,  val35,  te35  = encode_ipc_splits(tr35,  val35,  te35)
+    tr75,  val75,  te75  = encode_ipc_splits(tr75,  val75,  te75)
+    tr115, val115, te115 = encode_ipc_splits(tr115, val115, te115)
 
     print("\nData split:")
     print_split_stats("3.5yr",  tr35,  val35,  te35)

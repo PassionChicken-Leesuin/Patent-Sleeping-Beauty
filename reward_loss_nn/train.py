@@ -231,29 +231,40 @@ class Adam:
 # ══════════════════════════════════════════════════════
 #  Data utilities
 # ══════════════════════════════════════════════════════
-def label_encode_ipc(df: pd.DataFrame) -> pd.DataFrame:
+_IPC_PAIRS = [
+    ("ipc_section",    "ipc_section_enc"),
+    ("ipc_class_full", "ipc_class_enc"),
+    ("ipc_subclass",   "ipc_subclass_enc"),
+]
+
+
+def fit_ipc_freq(df: pd.DataFrame) -> dict:
+    """train fold 에서만 fit."""
+    return {col: df[col].value_counts() if col in df.columns else pd.Series(dtype=int)
+            for col, _ in _IPC_PAIRS}
+
+
+def apply_ipc_freq(df: pd.DataFrame, freqs: dict) -> pd.DataFrame:
     df = df.copy()
-    for col, enc_col in [
-        ("ipc_section",    "ipc_section_enc"),
-        ("ipc_class_full", "ipc_class_enc"),
-        ("ipc_subclass",   "ipc_subclass_enc"),
-    ]:
-        if col in df.columns:
-            freq = df[col].value_counts()
-            df[enc_col] = df[col].map(freq).fillna(0).astype(int)
+    for col, enc_col in _IPC_PAIRS:
+        if col in df.columns and col in freqs:
+            df[enc_col] = df[col].map(freqs[col]).fillna(0).astype(int)
         else:
             df[enc_col] = 0
     return df
 
 
 def load_data():
+    """IPC encoding 은 여기서 하지 않는다 — split 후 train-only fit."""
     labels = pd.read_parquet(LABEL_FILE)
     feat   = pd.read_parquet(FEAT_FILE)
     df = feat.merge(
         labels[["patent_id", "B", "psb", "ipc_subclass"]],
         on="patent_id", how="inner",
     )
-    df = label_encode_ipc(df)
+    # encoded 컬럼을 미리 확보 (값은 split 후에 채워짐)
+    for _, enc_col in _IPC_PAIRS:
+        df[enc_col] = 0
 
     feat_cols = [c for c in FEAT_COLS if c in df.columns]
     for c in feat_cols:
@@ -317,6 +328,11 @@ def main():
     print(f"  Features: {len(feat_cols)}  |  Total: {len(df):,}  PSB=1: {df['psb'].sum():,}")
 
     tr, val, te = split(df)
+    # IPC freq encoding: train 분포로 fit, val/test 에 apply
+    _freqs = fit_ipc_freq(tr)
+    tr  = apply_ipc_freq(tr,  _freqs)
+    val = apply_ipc_freq(val, _freqs)
+    te  = apply_ipc_freq(te,  _freqs)
     print(f"  Train {len(tr):,}(PSB={tr['psb'].sum()})  "
           f"Val {len(val):,}(PSB={val['psb'].sum()})  "
           f"Test {len(te):,}(PSB={te['psb'].sum()})")
@@ -481,13 +497,10 @@ def main():
             labels[["patent_id", "psb", "ipc_subclass"]],
             on="patent_id", how="inner",
         )
-        # IPC 인코딩
-        for col_, enc_col_ in [("ipc_section","ipc_section_enc"),("ipc_class_full","ipc_class_enc"),("ipc_subclass","ipc_subclass_enc")]:
-            if col_ in df35_full.columns:
-                freq_ = df35_full[col_].value_counts()
-                df35_full[enc_col_] = df35_full[col_].map(freq_).fillna(0).astype(int)
-            else:
-                df35_full[enc_col_] = 0
+        # IPC 인코딩: train fold (1982~1986) 에서만 fit 후 전체에 apply
+        _tr_mask = df35_full["grant_year"].isin(TRAIN_YEARS)
+        _freqs35 = fit_ipc_freq(df35_full[_tr_mask])
+        df35_full = apply_ipc_freq(df35_full, _freqs35)
 
         # 3.5yr feature 컬럼
         def get_cite35():
@@ -516,10 +529,7 @@ def main():
             rf_pred = pd.Series(rf_clf.predict_proba(X_te35)[:, 1], index=te35.index)
             all_evals["Random Forest (3.5yr)"] = evaluate(te35["psb"], rf_pred, "Random Forest (3.5yr features)")
 
-        # Beauty coefficient & cumulative citations (from 3.5yr data)
-        if "B" in df35_full.columns:
-            beauty_scores = te35["B"]
-            all_evals["Beauty Coefficient"] = evaluate(te35["psb"], beauty_scores, "Beauty Coefficient B")
+        # Beauty Coefficient B 는 label 정의에 사용되므로 baseline 제외.
         cite_col = "t35__cum_citations"
         if cite_col in te35.columns:
             all_evals["Cum Citations"] = evaluate(te35["psb"], te35[cite_col], "Cumulative Citations (3.5yr)")

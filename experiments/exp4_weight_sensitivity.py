@@ -25,7 +25,7 @@ from config import (
     GAMMA, MAINT_COST, PSB_REWARD, PSB_THRESHOLDS,
     XGB_PARAMS, labels_file, results_dir,
 )
-from utils import load_and_merge, split, get_feature_cols
+from utils import load_and_merge, split, encode_ipc_splits, get_feature_cols
 
 PSB_WEIGHTS = [50, 100, 200, 300, 500, 664, 1000, 2000]
 
@@ -41,6 +41,9 @@ def run_bi(df35, df75, df115, psb_weight: float) -> pd.DataFrame:
     tr35,  val35,  te35  = split(df35.copy())
     tr75,  val75,  te75  = split(df75.copy())
     tr115, val115, te115 = split(df115.copy())
+    tr35,  val35,  te35  = encode_ipc_splits(tr35,  val35,  te35)
+    tr75,  val75,  te75  = encode_ipc_splits(tr75,  val75,  te75)
+    tr115, val115, te115 = encode_ipc_splits(tr115, val115, te115)
 
     # Step A: 11.5yr
     fc115 = [c for c in get_feature_cols(11.5) if c in tr115.columns]

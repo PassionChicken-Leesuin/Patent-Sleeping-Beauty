@@ -25,7 +25,7 @@ from config import (
     labels_file, models_dir, results_dir,
 )
 from utils import (
-    load_and_merge, split, get_feature_cols,
+    load_and_merge, split, encode_ipc_splits, get_feature_cols,
     train_qmodel, save_model,
 )
 
@@ -144,6 +144,9 @@ def run_reward_sensitivity(thr: float):
         tr35,  val35,  te35  = split(df35.copy())
         tr75,  val75,  te75  = split(df75.copy())
         tr115, val115, te115 = split(df115.copy())
+        tr35,  val35,  te35  = encode_ipc_splits(tr35,  val35,  te35)
+        tr75,  val75,  te75  = encode_ipc_splits(tr75,  val75,  te75)
+        tr115, val115, te115 = encode_ipc_splits(tr115, val115, te115)
 
         res = run_bi_for_reward(
             reward,
