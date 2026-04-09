@@ -1,0 +1,113 @@
+"""
+PSB 프로젝트 전역 설정 — 단일 진실 소스 (Single Source of Truth)
+모든 pipeline/ 및 experiments/ 스크립트가 이 파일을 import.
+"""
+from pathlib import Path
+
+# ── 루트 경로 ─────────────────────────────────────────
+ROOT = Path(__file__).parent
+
+# ── 원본 데이터 경로 ──────────────────────────────────
+BULK_DIR  = Path(r"C:\Users\User\OneDrive\문서\이수인\서울대학교\Biblo+Text\Patent_Bulk")
+MAINT_DIR = Path(r"C:\Users\User\OneDrive\문서\이수인\서울대학교\Sbj_SB\MaintFeeEvents_20260331")
+
+MAINT_FILE       = MAINT_DIR / "MaintFeeEvents_20260330.txt"
+PATENT_FILE      = BULK_DIR  / "g_patent.tsv"
+APPLICATION_FILE = BULK_DIR  / "g_application.tsv"
+CITATION_FILE    = BULK_DIR  / "g_us_patent_citation.tsv"
+IPC_FILE         = BULK_DIR  / "g_ipc_at_issue.tsv"
+ASSIGNEE_FILE    = BULK_DIR  / "g_assignee_disambiguated.tsv"
+INVENTOR_FILE    = BULK_DIR  / "g_inventor_disambiguated.tsv"
+FIGURES_FILE     = BULK_DIR  / "g_figures.tsv"
+FOREIGN_FILE     = BULK_DIR  / "g_foreign_citation.tsv"
+
+# ── 중간 산출물 (processed/) ──────────────────────────
+PROCESSED_DIR = ROOT / "processed"
+PROCESSED_DIR.mkdir(exist_ok=True)
+
+PATENTS_80S_FILE     = PROCESSED_DIR / "patents_80s.parquet"
+MAINT_EVENTS_FILE    = PROCESSED_DIR / "maint_events_80s.parquet"
+CITATION_ANNUAL_FILE = PROCESSED_DIR / "citation_annual.parquet"
+BACKWARD_CIT_FILE    = PROCESSED_DIR / "backward_citation.parquet"
+IPC_FILE_OUT         = PROCESSED_DIR / "ipc_main.parquet"
+ASSIGNEE_FILE_OUT    = PROCESSED_DIR / "assignee.parquet"
+INVENTOR_FILE_OUT    = PROCESSED_DIR / "inventor_count.parquet"
+FIGURES_FILE_OUT     = PROCESSED_DIR / "figures.parquet"
+FOREIGN_CIT_FILE_OUT = PROCESSED_DIR / "foreign_citation.parquet"
+
+# ── 피처 산출물 (features/) ───────────────────────────
+FEATURES_DIR = ROOT / "features"
+FEATURES_DIR.mkdir(exist_ok=True)
+
+FEATURES_35_FILE  = FEATURES_DIR / "features_3_5yr.parquet"
+FEATURES_75_FILE  = FEATURES_DIR / "features_7_5yr.parquet"
+FEATURES_115_FILE = FEATURES_DIR / "features_11_5yr.parquet"
+
+# ── 연구 파라미터 ─────────────────────────────────────
+GRANT_YEAR_START = 1980
+GRANT_YEAR_END   = 1989
+DECISION_POINTS  = [3.5, 7.5, 11.5]
+PATENT_TERM_YRS  = 17
+
+# ── Train / Val / Test Split (전 실험 고정) ───────────
+TRAIN_YEARS = list(range(1982, 1987))   # 1982~1986 (5개년)
+VAL_YEARS   = [1987]                     # 1987       (1개년)
+TEST_YEARS  = list(range(1988, 1990))   # 1988~1989  (2개년)
+
+# ── PSB 임계값 — 3가지 실험 조건 ─────────────────────
+#   0.001 = subclass 내 상위 0.1%
+#   0.005 = subclass 내 상위 0.5%
+#   0.010 = subclass 내 상위 1.0%
+PSB_THRESHOLDS = [0.001, 0.005, 0.010]
+
+# ── BI 고정 파라미터 ──────────────────────────────────
+GAMMA      = 1.0
+MAINT_COST = {3.5: 1.0, 7.5: 1.88, 11.5: 3.85}
+PSB_REWARD = 8.0
+PSB_WEIGHT = 300.0
+
+# ── XGBoost 파라미터 (전 실험 공통) ──────────────────
+XGB_PARAMS = dict(
+    n_estimators     = 500,
+    max_depth        = 6,
+    learning_rate    = 0.05,
+    subsample        = 0.8,
+    colsample_bytree = 0.8,
+    min_child_weight = 5,
+    reg_alpha        = 0.1,
+    reg_lambda       = 1.0,
+    random_state     = 42,
+    n_jobs           = -1,
+    tree_method      = "hist",
+)
+
+# ── 정적 Feature 컬럼 (전 실험 공통) ─────────────────
+STATIC_COLS = [
+    "num_claims", "filing_to_grant_days", "small_entity",
+    "num_figures", "num_sheets", "inventor_count",
+    "bwd_us_total", "bwd_examiner", "bwd_applicant",
+    "bwd_foreign", "bwd_total", "bwd_examiner_ratio",
+    "is_organization", "is_us_company", "is_foreign", "is_individual",
+    "ipc_section_enc", "ipc_class_enc", "ipc_subclass_enc",
+]
+
+# ── Threshold별 경로 헬퍼 ────────────────────────────
+def thr_tag(thr: float) -> str:
+    """0.001 → 'thr001', 0.005 → 'thr005', 0.010 → 'thr010'"""
+    return f"thr{int(round(thr * 1000)):03d}"
+
+def labels_file(thr: float) -> Path:
+    """threshold별 라벨 파일 경로"""
+    return FEATURES_DIR / f"labels_{thr_tag(thr)}.parquet"
+
+def models_dir(thr: float) -> Path:
+    """threshold별 모델 저장 디렉토리"""
+    d = ROOT / "models" / thr_tag(thr)
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+def results_dir(thr: float) -> Path:
+    """threshold별 결과 저장 디렉토리"""
+    d = ROOT / "results" / thr_tag(thr)
+    d.mkdir(parents=True, exist_ok=True)
+    return d

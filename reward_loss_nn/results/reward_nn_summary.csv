@@ -1,0 +1,6 @@
+model,precision@100,precision@200,precision@500,precision@1000,average_precision
+reward_loss_mlp_115yr,0.01,0.005,0.002,0.001,0.0023978290051430377
+XGBoost Classifier (3.5yr),0.0,0.005,0.002,0.002,0.0028272689390998343
+Random Forest (3.5yr),0.0,0.005,0.006,0.003,0.002765974094860989
+Cum Citations,0.0,0.0,0.0,0.0,0.002468713034026418
+Backward Induction Q35,0.04,0.025,0.018,0.017,0.004919220033244572

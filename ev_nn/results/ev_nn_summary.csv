@@ -1,0 +1,3 @@
+model,average_precision,precision@100,precision@200,precision@500,precision@1000
+ev_nn_thr001_weighted,0.0030292333601415,0.0,0.0,0.0,0.002
+ev_nn_thr001_balanced,0.003606319997803617,0.02,0.015,0.012,0.008

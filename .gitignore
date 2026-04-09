@@ -1,0 +1,44 @@
+# ── Python ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.env
+
+# ── Jupyter ─────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── OS / Editor ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+
+# ── 대용량 원본·중간 데이터 (재현 가능) ─────────────
+processed/
+features/*.parquet
+
+# ── 학습된 모델 (재현 가능) ────────────────────────
+models/
+ev_nn/models/
+reward_loss_nn/models/
+
+# ── 대용량 실험 산출물 (parquet) ────────────────────
+results/*.parquet
+results/thr001/*.parquet
+results/thr005/*.parquet
+results/thr010/*.parquet
+ev_nn/results/*.parquet
+reward_loss_nn/results/*.parquet
+
+# summary CSV / PNG 는 포함
+!results/**/*.csv
+!results/**/*.png
+!ev_nn/results/*.csv
+!reward_loss_nn/results/*.csv
