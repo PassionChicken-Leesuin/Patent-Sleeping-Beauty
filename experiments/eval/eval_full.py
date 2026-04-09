@@ -72,13 +72,13 @@ def main():
     print(f"Test: {n:,}  PSB=1: {total_psb}  base rate: {base_rate:.4f}")
     print()
 
+    # 전 생애 Beauty(B, B_11yr)는 PSB 라벨 정의에 사용되므로 baseline 제외.
     models = {}
-    for col, lbl in [("q_score",   "Q_115 (BI)"),
-                     ("Q_35_pred", "Q_35  (BI)"),
-                     ("xgb_score", "XGBoost"),
-                     ("rf_score",  "Random Forest"),
-                     ("B_11yr",    "B_11yr"),
-                     ("B",         "B_full")]:
+    for col, lbl in [("q_score",             "Q_115 (BI)"),
+                     ("Q_35_pred",           "Q_35  (BI)"),
+                     ("xgb_score",           "XGBoost"),
+                     ("rf_score",            "Random Forest"),
+                     ("beauty_early_score",  "Early Beauty B'")]:
         if col in res.columns:
             models[lbl] = res[col].values
 

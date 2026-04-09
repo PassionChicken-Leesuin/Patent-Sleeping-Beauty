@@ -55,12 +55,14 @@ def run_ipc_analysis(thr: float):
     df = pd.read_parquet(bc_path).dropna(subset=["ipc_subclass"])
     print(f"  Loaded: {len(df):,} rows")
 
+    # 전 생애 Beauty(B)는 PSB 라벨 정의에 사용되므로 baseline 제외.
+    # 시간 대칭 버전(beauty_early_score)은 exp2 에서 생성되면 자동 포함.
     score_cols = {
-        "bi":     "bi_policy_score",
-        "q35":    "q35_score",
-        "rf":     "rf_score",
-        "xgb":    "xgb_score",
-        "beauty": "beauty_score",
+        "bi":           "bi_policy_score",
+        "q35":          "q35_score",
+        "rf":           "rf_score",
+        "xgb":          "xgb_score",
+        "beauty_early": "beauty_early_score",
     }
 
     records = []
