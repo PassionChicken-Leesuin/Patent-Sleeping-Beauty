@@ -32,7 +32,7 @@ import pandas as pd
 from config import PSB_THRESHOLDS, labels_file, models_dir, results_dir
 from utils import (
     load_and_merge, split, encode_ipc_splits, get_feature_cols,
-    train_xgb_classifier, train_rf_classifier,
+    train_xgb_classifier, train_rf_classifier, train_lr_classifier,
     evaluate_ranking, save_model,
 )
 
@@ -134,6 +134,14 @@ def run_baseline_comparison(thr: float):
     evaluate_ranking(te35["psb"], rf_scores, label="Random Forest")
     save_model(rf_model, mdir / "baseline_rf.pkl")
     all_results["rf_score"] = rf_scores.values
+
+    # ── Baseline 4b: Logistic Regression ─────────────
+    print("\n── Baseline 4b: Logistic Regression ──")
+    lr_model  = train_lr_classifier(X_tr, y_tr, X_val, y_val, psb_tr=y_tr)
+    lr_scores = pd.Series(lr_model.predict_proba(X_te)[:, 1], index=te35.index)
+    evaluate_ranking(te35["psb"], lr_scores, label="Logistic Regression")
+    save_model(lr_model, mdir / "baseline_lr.pkl")
+    all_results["lr_score"] = lr_scores.values
 
     # ── Baseline 5: Backward Induction (exp1 결과) ───
     print("\n── Baseline 5: Backward Induction (from exp1) ──")

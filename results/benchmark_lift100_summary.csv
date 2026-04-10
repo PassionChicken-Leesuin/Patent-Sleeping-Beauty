@@ -1,5 +1,6 @@
 ,thr=0.001,thr=0.005,thr=0.01
 Random Forest,15.69,7.86,1.43
+Logistic Reg,3.92,1.31,1.43
 XGBoost,15.69,6.55,3.57
 BI Q_35,23.53,5.24,2.86
 BI Policy (full),3.92,2.62,1.43

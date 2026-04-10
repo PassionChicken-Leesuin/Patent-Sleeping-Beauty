@@ -62,6 +62,7 @@ def run_ipc_analysis(thr: float):
         "q35":          "q35_score",
         "rf":           "rf_score",
         "xgb":          "xgb_score",
+        "lr":           "lr_score",
         "beauty_early": "beauty_early_score",
     }
 

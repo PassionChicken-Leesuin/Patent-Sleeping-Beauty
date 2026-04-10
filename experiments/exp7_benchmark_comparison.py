@@ -56,6 +56,7 @@ LITERATURE_LIFT_AT_100 = {
 SCORE_COLS = {
     "Early Beauty B'":   "beauty_early_score",
     "Cum Citations":     "cite_score",
+    "Logistic Reg":      "lr_score",
     "XGBoost":           "xgb_score",
     "Random Forest":     "rf_score",
     "BI Policy (full)":  "bi_policy_score",

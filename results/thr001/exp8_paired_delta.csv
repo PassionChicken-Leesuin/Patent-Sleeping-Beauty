@@ -1,0 +1,15 @@
+comparison,metric,mean_delta,ci_lo,ci_hi,frac_positive,sig
+BI_Q_35 - XGBoost,AP,-0.0,-0.0029,0.0035,0.456,False
+BI_Q_35 - XGBoost,P@100,0.0227,-0.02,0.07,0.759,False
+BI_Q_35 - XGBoost,lift@100,8.8862,-7.8431,27.4507,0.759,False
+BI_Q_35 - XGBoost,P@500,0.0104,-0.004,0.026,0.89,False
+BI_Q_35 - XGBoost,lift@500,4.0972,-1.5686,10.196,0.89,False
+BI_Q_35 - XGBoost,P@1000,0.0015,-0.007,0.01,0.582,False
+BI_Q_35 - XGBoost,lift@1000,0.5694,-2.7451,3.9215,0.582,False
+BI_Q_35 - LogisticReg,AP,-0.0015,-0.0047,0.0028,0.198,False
+BI_Q_35 - LogisticReg,P@100,0.0519,0.0,0.11,0.965,False
+BI_Q_35 - LogisticReg,lift@100,20.3645,0.0,43.1368,0.965,False
+BI_Q_35 - LogisticReg,P@500,0.0038,-0.016,0.026,0.598,False
+BI_Q_35 - LogisticReg,lift@500,1.4957,-6.2744,10.196,0.598,False
+BI_Q_35 - LogisticReg,P@1000,0.0018,-0.011,0.015,0.582,False
+BI_Q_35 - LogisticReg,lift@1000,0.6871,-4.3137,5.8823,0.582,False

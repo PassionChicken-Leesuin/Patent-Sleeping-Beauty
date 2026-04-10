@@ -13,6 +13,9 @@ import pandas as pd
 import pickle
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import average_precision_score, mean_squared_error
 
 from config import (
@@ -237,6 +240,27 @@ def train_rf_classifier(X_tr, y_tr, X_val, y_val,
     ap = average_precision_score(y_val, model.predict_proba(X_val)[:, 1])
     print(f"  [RF Classifier]  val AP: {ap:.4f}")
     return model
+
+
+# ── Logistic Regression 분류기 학습 ─────────────────
+def train_lr_classifier(X_tr, y_tr, X_val, y_val,
+                         psb_tr=None, psb_weight: float = PSB_WEIGHT):
+    """StandardScaler + L2-logistic.
+    sample_weight 로 PSB=1 샘플에 가중치, L-BFGS 로 빠르게 수렴.
+    """
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("lr",     LogisticRegression(
+            penalty="l2", C=1.0, solver="lbfgs",
+            max_iter=2000, random_state=42, n_jobs=-1,
+        )),
+    ])
+    sw = make_sample_weights(psb_tr, psb_weight) if psb_tr is not None else None
+    # sklearn Pipeline: step name 기반 kwargs 전달
+    pipe.fit(X_tr, y_tr, lr__sample_weight=sw)
+    ap = average_precision_score(y_val, pipe.predict_proba(X_val)[:, 1])
+    print(f"  [LR Classifier]  val AP: {ap:.4f}")
+    return pipe
 
 
 # ── 평가: Precision@k + AP ───────────────────────────
