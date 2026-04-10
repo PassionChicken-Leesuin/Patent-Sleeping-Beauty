@@ -19,9 +19,10 @@ from config import (
     FEATURES_35_FILE, FEATURES_75_FILE, FEATURES_115_FILE,
     MAINT_FEATURES_FILE,
     DYN_FEATURES_35_FILE, DYN_FEATURES_75_FILE, DYN_FEATURES_115_FILE,
+    ABSTRACT_DYN_FILE,
     TRAIN_YEARS, VAL_YEARS, TEST_YEARS,
     STATIC_COLS, MAINT_COLS_BY_CUTOFF, XGB_PARAMS, PSB_WEIGHT,
-    get_dynamic_cols, dynamic_features_file,
+    get_dynamic_cols, dynamic_features_file, get_abstract_cols,
 )
 
 
@@ -51,7 +52,8 @@ def get_feature_cols(cutoff: float) -> list:
     return (STATIC_COLS
             + get_cite_cols(cutoff)
             + get_maint_cols(cutoff)
-            + get_dynamic_cols(cutoff))
+            + get_dynamic_cols(cutoff)
+            + get_abstract_cols())
 
 
 # ── IPC Frequency Encoding ───────────────────────────
@@ -131,6 +133,11 @@ def load_and_merge(
     if dyn_path.exists():
         dyn = pd.read_parquet(dyn_path)
         df = df.merge(dyn, on="patent_id", how="left")
+
+    # abstract embedding 기반 정적 피처 (step10 산출물)
+    if ABSTRACT_DYN_FILE.exists():
+        abs_dyn = pd.read_parquet(ABSTRACT_DYN_FILE)
+        df = df.merge(abs_dyn, on="patent_id", how="left")
 
     # IPC encoded 컬럼을 미리 0 으로 채워둠 (split 이전 단계)
     for _, enc_col in _IPC_COLS:

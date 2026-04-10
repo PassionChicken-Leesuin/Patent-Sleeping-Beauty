@@ -49,6 +49,9 @@ DYN_FEATURES_35_FILE  = FEATURES_DIR / "dynamic_t35.parquet"
 DYN_FEATURES_75_FILE  = FEATURES_DIR / "dynamic_t75.parquet"
 DYN_FEATURES_115_FILE = FEATURES_DIR / "dynamic_t115.parquet"
 
+# step 10 abstract-embedding-derived features (cutoff-independent)
+ABSTRACT_DYN_FILE = FEATURES_DIR / "abstract_dynamic.parquet"
+
 # ── 연구 파라미터 ─────────────────────────────────────
 GRANT_YEAR_START = 1980
 GRANT_YEAR_END   = 1989
@@ -134,10 +137,26 @@ DYNAMIC_FEATURE_BASE = [
 ]
 
 
+ABSTRACT_FEATURE_COLS = [
+    "abs_ipc_centroid_dist",
+    "abs_cross_ipc_nn_dist",
+    "abs_centroid_margin",
+    "abs_density_in_ipc",
+    "abs_outlier_score",
+    "abs_kmeans_topic_id",
+    "abs_kmeans_topic_dist",
+]
+
+
 def get_dynamic_cols(cutoff: float) -> list:
     """주어진 cutoff 시점의 dynamic feature 컬럼명 리스트."""
     tag = f"t{str(cutoff).replace('.', '')}"
     return [f"{tag}__dyn_{c}" for c in DYNAMIC_FEATURE_BASE]
+
+
+def get_abstract_cols() -> list:
+    """abstract embedding 기반 정적 피처 (cutoff 무관)."""
+    return list(ABSTRACT_FEATURE_COLS)
 
 
 def dynamic_features_file(cutoff: float):
