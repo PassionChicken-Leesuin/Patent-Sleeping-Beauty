@@ -1,7 +1,7 @@
 ,thr=0.001,thr=0.005,thr=0.01
-Random Forest,3.92,3.93,1.43
-XGBoost,0.0,0.0,2.14
-BI Q_35,3.92,2.62,2.14
+Random Forest,11.76,3.93,0.71
+BI Q_35,15.69,6.55,2.14
+XGBoost,3.92,6.55,1.43
 Early Beauty B',0.0,0.0,0.71
-BI Policy (full),0.0,2.62,0.71
+BI Policy (full),0.0,1.31,0.71
 Cum Citations,0.0,1.31,1.43

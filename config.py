@@ -44,6 +44,11 @@ FEATURES_75_FILE  = FEATURES_DIR / "features_7_5yr.parquet"
 FEATURES_115_FILE = FEATURES_DIR / "features_11_5yr.parquet"
 MAINT_FEATURES_FILE = FEATURES_DIR / "maint_features.parquet"
 
+# step 8 dynamic features (citer-quality + citation shape)
+DYN_FEATURES_35_FILE  = FEATURES_DIR / "dynamic_t35.parquet"
+DYN_FEATURES_75_FILE  = FEATURES_DIR / "dynamic_t75.parquet"
+DYN_FEATURES_115_FILE = FEATURES_DIR / "dynamic_t115.parquet"
+
 # ── 연구 파라미터 ─────────────────────────────────────
 GRANT_YEAR_START = 1980
 GRANT_YEAR_END   = 1989
@@ -101,6 +106,46 @@ MAINT_COLS_BY_CUTOFF = {
     7.5:  ["paid_3_5"],
     11.5: ["paid_3_5", "paid_7_5"],
 }
+
+
+# ── Dynamic feature 컬럼 헬퍼 (step8 산출물) ─────────
+# step8 은 각 cutoff t 별로 prefix "tXX__dyn_" 를 붙여 저장한다.
+# get_dynamic_cols(cutoff) 가 시점에 맞는 컬럼명 리스트를 반환.
+DYNAMIC_FEATURE_BASE = [
+    # F17~F22 citation shape
+    "cite_burstiness",
+    "cite_gini",
+    "cite_first_nonzero_age",
+    "cite_longest_zero_run",
+    "cite_resurgence_count",
+    "cite_ipc_percentile",
+    # F01~F10 citer-quality
+    "n_citers",
+    "n_citers_log",
+    "citer_recency_mean",
+    "citer_ipc_cross_rate",
+    "citer_ipc_diversity",
+    "citer_assignee_hhi",
+    "citer_assignee_unique_rate",
+    "citer_self_rate",
+    "citer_loc_diversity",
+    "citer_examiner_rate",
+    "cross_ipc_slope",
+]
+
+
+def get_dynamic_cols(cutoff: float) -> list:
+    """주어진 cutoff 시점의 dynamic feature 컬럼명 리스트."""
+    tag = f"t{str(cutoff).replace('.', '')}"
+    return [f"{tag}__dyn_{c}" for c in DYNAMIC_FEATURE_BASE]
+
+
+def dynamic_features_file(cutoff: float):
+    return {
+        3.5:  DYN_FEATURES_35_FILE,
+        7.5:  DYN_FEATURES_75_FILE,
+        11.5: DYN_FEATURES_115_FILE,
+    }[cutoff]
 
 # ── Threshold별 경로 헬퍼 ────────────────────────────
 def thr_tag(thr: float) -> str:

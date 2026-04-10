@@ -18,8 +18,10 @@ from sklearn.metrics import average_precision_score, mean_squared_error
 from config import (
     FEATURES_35_FILE, FEATURES_75_FILE, FEATURES_115_FILE,
     MAINT_FEATURES_FILE,
+    DYN_FEATURES_35_FILE, DYN_FEATURES_75_FILE, DYN_FEATURES_115_FILE,
     TRAIN_YEARS, VAL_YEARS, TEST_YEARS,
     STATIC_COLS, MAINT_COLS_BY_CUTOFF, XGB_PARAMS, PSB_WEIGHT,
+    get_dynamic_cols, dynamic_features_file,
 )
 
 
@@ -46,7 +48,10 @@ def get_maint_cols(cutoff: float) -> list:
 
 
 def get_feature_cols(cutoff: float) -> list:
-    return STATIC_COLS + get_cite_cols(cutoff) + get_maint_cols(cutoff)
+    return (STATIC_COLS
+            + get_cite_cols(cutoff)
+            + get_maint_cols(cutoff)
+            + get_dynamic_cols(cutoff))
 
 
 # ── IPC Frequency Encoding ───────────────────────────
@@ -120,6 +125,12 @@ def load_and_merge(
         for c in ["paid_3_5", "paid_7_5", "paid_11_5"]:
             if c in df.columns:
                 df[c] = df[c].fillna(0).astype(int)
+
+    # 동적 피처 병합 (step8 산출물)
+    dyn_path = dynamic_features_file(cutoff)
+    if dyn_path.exists():
+        dyn = pd.read_parquet(dyn_path)
+        df = df.merge(dyn, on="patent_id", how="left")
 
     # IPC encoded 컬럼을 미리 0 으로 채워둠 (split 이전 단계)
     for _, enc_col in _IPC_COLS:
